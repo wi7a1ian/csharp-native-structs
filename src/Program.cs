@@ -43,11 +43,12 @@ namespace ReadStructFromFs
             {
                 for(int i = 0; i < 8; ++i)
                 {
-                    Console.Write((char)bpbRef.m_oemLabel[i]);
+                    Console.Write((char)bpbRef.OemLabel[i]);
                 }
 
                 Console.WriteLine();
-                Console.WriteLine("Sector size: {0}", bpbRef.m_logicalSectorSize);
+                Console.WriteLine("Sector size: {0}", bpbRef.LogicalSectorSize);
+                Console.WriteLine("End signature: 0x{0:x} (0xAA55)", bpbRef.EndSignature);
                 //Console.WriteLine(Encoding.Default.GetString(bpbRef.m_oemLabel));}
             }
 
