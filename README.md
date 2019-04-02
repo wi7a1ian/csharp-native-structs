@@ -1,4 +1,4 @@
-# csharp-native-structs
+# Info
 Since C# 7.3 it is now esier to map memory buffer to a struct.
 
 ```csharp
@@ -21,3 +21,8 @@ unsafe
     Console.WriteLine("Sector size: {0}", bpbRef.m_logicalSectorSize);
 }
 ```
+
+# Test
+1. Ensure you have NTFS volume mounted as `C:`
+1. `cd src`
+1. `dotnet run`
