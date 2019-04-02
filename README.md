@@ -18,7 +18,7 @@ var bpb = NativeStructSerializer.Deserialize<BpbStruct>(buf);
 
 unsafe
 {
-    Console.WriteLine("Sector size: {0}", bpbRef.m_logicalSectorSize);
+    Console.WriteLine("Sector size: {0}", bpbRef.LogicalSectorSize);
 }
 ```
 
