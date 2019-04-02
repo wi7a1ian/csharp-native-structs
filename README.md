@@ -26,7 +26,9 @@ unsafe
 1. Ensure you have NTFS volume mounted as `C:`
 1. `cd src`
 1. `dotnet run`
-1. Expected output
-> NTFS
-> Sector size: 512
-> End signature: 0xaa55 (0xAA55)
+1. Expected output:
+    ```
+    NTFS
+    Sector size: 512
+    End signature: 0xaa55 (0xAA55)
+    ```
