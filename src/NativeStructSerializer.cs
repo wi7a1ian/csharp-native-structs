@@ -48,6 +48,12 @@ namespace ReadStructFromFs
 
             return buffer;
         }
+
+        public static unsafe void Serialize<T>(T value, byte[] to) where T : unmanaged
+           => new Span<byte>(&value, sizeof(T)).CopyTo(to);
+
+        public static unsafe void Serialize<T>(T value, Span<byte> to) where T : unmanaged
+            => new Span<byte>(&value, sizeof(T)).CopyTo(to);
     }
 
     public class NativeStructSerializer
