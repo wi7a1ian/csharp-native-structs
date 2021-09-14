@@ -5,10 +5,27 @@ using System.Runtime.InteropServices;
 
 namespace ReadStructFromFs
 {
-    public class NativeStructSerializer
+    public class NativeStructSerializer73
     {
-        
-        public static unsafe T DeserializeSinceCv7_3<T>(byte[] buffer) where T : unmanaged
+
+        public static unsafe void Deserialize<T>(Span<byte> buffer, out T result) where T : unmanaged
+        { 
+            fixed (T* resultPtr = &result) 
+            { 
+                buffer.Slice(0, sizeof(T)).CopyTo(new Span<byte>(resultPtr, sizeof(T))); 
+            };
+        }
+
+        public static unsafe T Deserialize<T>(Span<byte> buffer) where T : unmanaged
+        {
+            T result = new T();
+
+            buffer.Slice(0, sizeof(T)).CopyTo(new Span<byte>(&result, sizeof(T)));
+
+            return result;
+        }
+
+        public static unsafe T Deserialize<T>(byte[] buffer) where T : unmanaged
         {
             T result = new T();
 
@@ -20,7 +37,7 @@ namespace ReadStructFromFs
             return result;
         }
 
-        public static unsafe byte[] SerializeSinceCv7_3<T>(T value) where T : unmanaged
+        public static unsafe byte[] Serialize<T>(T value) where T : unmanaged
         {
             byte[] buffer = new byte[sizeof(T)];
 
@@ -31,7 +48,10 @@ namespace ReadStructFromFs
 
             return buffer;
         }
+    }
 
+    public class NativeStructSerializer
+    { 
         public static T Deserialize2<T>(byte[] buffer) where T : struct
         {
             GCHandle handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);

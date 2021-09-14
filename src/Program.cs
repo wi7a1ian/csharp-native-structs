@@ -1,8 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
+﻿using BenchmarkDotNet.Running;
+using System;
+using System.Diagnostics;
 
 namespace ReadStructFromFs
 {
@@ -10,12 +8,21 @@ namespace ReadStructFromFs
     {
         static void Main(string[] args)
         {
-             var drivePath = @"\\.\C:"; // @"\\.\PhysicalDrive1";
+            #if RELEASE
+            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+            #else
+            Test();
+            #endif
+        }
+
+        private static void Test()
+        {
+            var drivePath = @"\\.\C:"; // @"\\.\PhysicalDrive1";
             ulong startReadByte = 0;
             int sectorSize = 512;
 
             var hDrive = NativeMethods.CreateFile(drivePath, NativeMethods.GENERIC_READ, NativeMethods.FILE_SHARE_READ | NativeMethods.FILE_SHARE_WRITE, IntPtr.Zero, NativeMethods.OPEN_EXISTING, NativeMethods.FILE_ATTRIBUTE_NORMAL, IntPtr.Zero);
-            
+
             if (hDrive.IsInvalid)
             {
                 return;
@@ -27,21 +34,41 @@ namespace ReadStructFromFs
             }
 
             var buf = new byte[sectorSize];
-            //var buf = stackalloc byte[numBytesToRead];
+            //var buf = stackalloc byte[sectorSize];
             if ((NativeMethods.ReadFile(hDrive, buf, sectorSize, out int read, IntPtr.Zero) == 0) || (read != sectorSize))
             {
                 return;
             }
 
             var bpb = NativeStructSerializer.Deserialize<BpbStruct>(buf);
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
             bpb = NativeStructSerializer.Deserialize2<BpbStruct>(buf);
-            bpb = NativeStructSerializer.DeserializeSinceCv7_3<BpbStruct>(buf);
-            
-            ref var bpbRef = ref bpb; // struct won't be copied that way
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
+            bpb = NativeStructSerializer73.Deserialize<BpbStruct>(buf);
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
+            bpb = NativeStructSerializer73.Deserialize<BpbStruct>(buf.AsSpan());
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
+            NativeStructSerializer73.Deserialize(buf.AsSpan(), out bpb);
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
+            Span<byte> localBuff = stackalloc byte[sectorSize];
+            buf.CopyTo(localBuff);
+
+            bpb = NativeStructSerializer73.Deserialize<BpbStruct>(localBuff);
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
+            NativeStructSerializer73.Deserialize(localBuff, out bpb);
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
+            ref var bpbRef = ref bpb; // FYI struct won't be copied that way
 
             unsafe
             {
-                for(int i = 0; i < 8; ++i)
+                for (int i = 0; i < 8; ++i)
                 {
                     Console.Write((char)bpbRef.OemLabel[i]);
                 }
@@ -55,46 +82,5 @@ namespace ReadStructFromFs
             NativeMethods.CloseHandle(hDrive);
             Console.ReadLine();
         }
-    }
-
-    internal static class NativeMethods
-    {
-        internal const uint FILE_ATTRIBUTE_NORMAL = 0x80;
-        internal const uint FILE_SHARE_READ = 0x01;
-        internal const uint FILE_SHARE_WRITE = 0x02;
-        internal const short INVALID_HANDLE_VALUE = -1;
-        internal const uint GENERIC_READ = 0x80000000;
-        internal const uint GENERIC_WRITE = 0x40000000;
-        internal const uint CREATE_NEW = 1;
-        internal const uint CREATE_ALWAYS = 2;
-        internal const uint OPEN_EXISTING = 3;
-
-        const string KERNEL32 = "kernel32.dll";
-
-        public enum EMoveMethod : uint
-        {
-            Begin = 0,
-            Current = 1,
-            End = 2
-        }
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal extern static uint SetFilePointerEx(
-            [In] SafeFileHandle hFile,
-            [In] ulong lDistanceToMove,
-            [Out] out Int64 lpDistanceToMoveHigh,
-            [In] EMoveMethod dwMoveMethod);
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static SafeFileHandle CreateFile(string lpFileName, uint dwDesiredAccess,
-          uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition,
-          uint dwFlagsAndAttributes, IntPtr hTemplateFile);
-
-        [DllImport(KERNEL32, ExactSpelling = true, SetLastError = true)]
-        internal extern static bool CloseHandle(SafeFileHandle handle);
-
-        [DllImport(KERNEL32, SetLastError = true)]
-        internal extern static int ReadFile(SafeFileHandle handle, byte[] bytes,
-           int numBytesToRead, out int numBytesRead, IntPtr overlapped_MustBeZero);
     }
 }
