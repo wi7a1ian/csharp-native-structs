@@ -76,6 +76,24 @@ namespace ReadStructFromFs
         }
 
         [Benchmark]
+        public void DeserializeUnaligned()
+        {
+            for (var i = 0; i < IterationCnt; ++i)
+            {
+                bpb = NativeStructSerializer.DeserializeUnsafeUnaligned<BpbStruct>(buf);
+            }
+        }
+
+        [Benchmark]
+        public void DeserializeUnalignedOutParam()
+        {
+            for (var i = 0; i < IterationCnt; ++i)
+            {
+                NativeStructSerializer.DeserializeUnsafeUnaligned(buf, out bpb);
+            }
+        }
+
+        [Benchmark]
         public void DeserializeUsing73()
         {
             for (var i = 0; i < IterationCnt; ++i)

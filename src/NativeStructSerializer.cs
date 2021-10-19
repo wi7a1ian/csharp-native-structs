@@ -2,12 +2,12 @@ using System;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace ReadStructFromFs
 {
     public class NativeStructSerializer73
     {
-
         public static unsafe void Deserialize<T>(Span<byte> buffer, out T result) where T : unmanaged
         { 
             fixed (T* resultPtr = &result) 
@@ -82,6 +82,22 @@ namespace ReadStructFromFs
             finally 
             {
                 Marshal.FreeHGlobal(ptr);
+            }
+        }
+
+        public static unsafe void DeserializeUnsafeUnaligned<T>(byte[] buffer, out T result)
+        {
+            fixed (byte* bufferPtr = buffer)
+            {
+                result = Unsafe.ReadUnaligned<T>(bufferPtr);
+            }
+        }
+
+        public static unsafe T DeserializeUnsafeUnaligned<T>(byte[] buffer)
+        {
+            fixed (byte* bufferPtr = buffer)
+            {
+                return Unsafe.ReadUnaligned<T>(bufferPtr);
             }
         }
 

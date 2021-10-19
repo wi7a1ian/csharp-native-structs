@@ -46,6 +46,12 @@ namespace ReadStructFromFs
             bpb = NativeStructSerializer.Deserialize2<BpbStruct>(buf);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
+            bpb = NativeStructSerializer.DeserializeUnsafeUnaligned<BpbStruct>(buf);
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
+            NativeStructSerializer.DeserializeUnsafeUnaligned(buf, out bpb);
+            Debug.Assert(bpb.LogicalSectorSize == sectorSize);
+
             bpb = NativeStructSerializer73.Deserialize<BpbStruct>(buf);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
