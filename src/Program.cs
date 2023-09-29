@@ -25,11 +25,13 @@ namespace ReadStructFromFs
 
             if (hDrive.IsInvalid)
             {
+                Console.WriteLine("Invalid drive");
                 return;
             }
 
             if (NativeMethods.SetFilePointerEx(hDrive, startReadByte, out Int64 moveToHigh, NativeMethods.EMoveMethod.Begin) == 0)
             {
+                Console.WriteLine("Cannot set file pointer");
                 return;
             }
 
@@ -37,37 +39,38 @@ namespace ReadStructFromFs
             //var buf = stackalloc byte[sectorSize];
             if ((NativeMethods.ReadFile(hDrive, buf, sectorSize, out int read, IntPtr.Zero) == 0) || (read != sectorSize))
             {
+                Console.WriteLine("Cannot read first sector");
                 return;
             }
 
-            var bpb = NativeStructSerializer.Deserialize<BpbStruct>(buf);
+            var bpb = ReinterpretCastPre73.As1<BpbStruct>(buf);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
-            bpb = NativeStructSerializer.Deserialize2<BpbStruct>(buf);
+            bpb = ReinterpretCastPre73.As2<BpbStruct>(buf);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
-            bpb = NativeStructSerializer.DeserializeUnsafeUnaligned<BpbStruct>(buf);
+            bpb = ReinterpretCastPre73.AsViaUnsafeUnaligned<BpbStruct>(buf);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
-            NativeStructSerializer.DeserializeUnsafeUnaligned(buf, out bpb);
+            ReinterpretCastPre73.AsViaUnsafeUnaligned(buf, out bpb);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
-            bpb = NativeStructSerializer73.Deserialize<BpbStruct>(buf);
+            bpb = ReinterpretCastPost73.As<BpbStruct>(buf);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
-            bpb = NativeStructSerializer73.Deserialize<BpbStruct>(buf.AsSpan());
+            bpb = ReinterpretCastPost73.As<BpbStruct>(buf.AsSpan());
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
-            NativeStructSerializer73.Deserialize(buf.AsSpan(), out bpb);
+            ReinterpretCastPost73.As(buf.AsSpan(), out bpb);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
             Span<byte> localBuff = stackalloc byte[sectorSize];
             buf.CopyTo(localBuff);
 
-            bpb = NativeStructSerializer73.Deserialize<BpbStruct>(localBuff);
+            bpb = ReinterpretCastPost73.As<BpbStruct>(localBuff);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
-            NativeStructSerializer73.Deserialize(localBuff, out bpb);
+            ReinterpretCastPost73.As(localBuff, out bpb);
             Debug.Assert(bpb.LogicalSectorSize == sectorSize);
 
             ref var bpbRef = ref bpb; // FYI struct won't be copied that way

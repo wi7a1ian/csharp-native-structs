@@ -6,7 +6,7 @@ using System;
 namespace ReadStructFromFs
 {
     [MemoryDiagnoser]
-    [SimpleJob(RunStrategy.ColdStart, launchCount: 1)]
+    [SimpleJob(RunStrategy.ColdStart, launchCount: 1, warmupCount: 1, targetCount: 1)]
     public class NativeStructBenchmark
     {
         private SafeFileHandle hDrive;
@@ -14,7 +14,7 @@ namespace ReadStructFromFs
         private BpbStruct bpb;
         private const int sectorSize = 512;
 
-        [Params(1 * 1024 * 1024)]
+        [Params(100 * 1024 * 1024)]
         public int IterationCnt { get; set; }
 
         [Params(@"\\.\C:")]
@@ -62,7 +62,7 @@ namespace ReadStructFromFs
         {
             for (var i = 0; i < IterationCnt; ++i)
             {
-                bpb = NativeStructSerializer.Deserialize<BpbStruct>(buf);
+                bpb = ReinterpretCastPre73.As1<BpbStruct>(buf);
             }
         }
 
@@ -71,7 +71,7 @@ namespace ReadStructFromFs
         {
             for (var i = 0; i < IterationCnt; ++i)
             {
-                bpb = NativeStructSerializer.Deserialize2<BpbStruct>(buf);
+                bpb = ReinterpretCastPre73.As2<BpbStruct>(buf);
             }
         }
 
@@ -80,7 +80,7 @@ namespace ReadStructFromFs
         {
             for (var i = 0; i < IterationCnt; ++i)
             {
-                bpb = NativeStructSerializer.DeserializeUnsafeUnaligned<BpbStruct>(buf);
+                bpb = ReinterpretCastPre73.AsViaUnsafeUnaligned<BpbStruct>(buf);
             }
         }
 
@@ -89,7 +89,7 @@ namespace ReadStructFromFs
         {
             for (var i = 0; i < IterationCnt; ++i)
             {
-                NativeStructSerializer.DeserializeUnsafeUnaligned(buf, out bpb);
+                ReinterpretCastPre73.AsViaUnsafeUnaligned(buf, out bpb);
             }
         }
 
@@ -98,7 +98,7 @@ namespace ReadStructFromFs
         {
             for (var i = 0; i < IterationCnt; ++i)
             {
-                bpb = NativeStructSerializer73.Deserialize<BpbStruct>(buf);
+                bpb = ReinterpretCastPost73.As<BpbStruct>(buf);
             }
         }
 
@@ -107,7 +107,7 @@ namespace ReadStructFromFs
         {
             for(var i = 0; i < IterationCnt; ++i)
             {
-                bpb = NativeStructSerializer73.Deserialize<BpbStruct>(buf.AsSpan());
+                bpb = ReinterpretCastPost73.As<BpbStruct>(buf.AsSpan());
             }
         }
 
@@ -116,7 +116,16 @@ namespace ReadStructFromFs
         {
             for (var i = 0; i < IterationCnt; ++i)
             {
-                NativeStructSerializer73.Deserialize(buf.AsSpan(), out bpb);
+                ReinterpretCastPost73.As(buf.AsSpan(), out bpb);
+            }
+        }
+
+        [Benchmark]
+        public void DeserializeUsing73AndSpanAsRef()
+        {
+            for (var i = 0; i < IterationCnt; ++i)
+            {
+                ref var bpb2 = ref ReinterpretCastPost73.AsRef<BpbStruct>(buf.AsSpan());
             }
         }
     }

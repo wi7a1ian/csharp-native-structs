@@ -6,9 +6,12 @@ using System.Runtime.CompilerServices;
 
 namespace ReadStructFromFs
 {
-    public class NativeStructSerializer73
+    public static class ReinterpretCastPost73
     {
-        public static unsafe void Deserialize<T>(Span<byte> buffer, out T result) where T : unmanaged
+        public static ref T AsRef<T>(Span<byte> buffer) where T : struct
+            => ref MemoryMarshal.AsRef<T>(buffer);
+
+        public static unsafe void As<T>(Span<byte> buffer, out T result) where T : unmanaged
         { 
             fixed (T* resultPtr = &result) 
             { 
@@ -16,7 +19,7 @@ namespace ReadStructFromFs
             };
         }
 
-        public static unsafe T Deserialize<T>(Span<byte> buffer) where T : unmanaged
+        public static unsafe T As<T>(Span<byte> buffer) where T : unmanaged
         {
             T result = new T();
 
@@ -25,7 +28,7 @@ namespace ReadStructFromFs
             return result;
         }
 
-        public static unsafe T Deserialize<T>(byte[] buffer) where T : unmanaged
+        public static unsafe T As<T>(byte[] buffer) where T : unmanaged
         {
             T result = new T();
 
@@ -37,7 +40,7 @@ namespace ReadStructFromFs
             return result;
         }
 
-        public static unsafe byte[] Serialize<T>(T value) where T : unmanaged
+        public static unsafe byte[] AsBytes<T>(T value) where T : unmanaged
         {
             byte[] buffer = new byte[sizeof(T)];
 
@@ -49,28 +52,16 @@ namespace ReadStructFromFs
             return buffer;
         }
 
-        public static unsafe void Serialize<T>(T value, byte[] to) where T : unmanaged
+        public static unsafe void AsBytes<T>(T value, byte[] to) where T : unmanaged
            => new Span<byte>(&value, sizeof(T)).CopyTo(to);
 
-        public static unsafe void Serialize<T>(T value, Span<byte> to) where T : unmanaged
+        public static unsafe void AsBytes<T>(T value, Span<byte> to) where T : unmanaged
             => new Span<byte>(&value, sizeof(T)).CopyTo(to);
     }
 
-    public class NativeStructSerializer
+    public static class ReinterpretCastPre73
     { 
-        public static T Deserialize2<T>(byte[] buffer) where T : struct
-        {
-            GCHandle handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            try
-            {
-                return (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
-            }
-            finally { 
-                handle.Free();
-            }
-        }
-
-        public static T Deserialize<T>(byte[] buffer) where T : struct
+        public static T As1<T>(byte[] buffer) where T : struct
         {
             var size = Marshal.SizeOf(typeof(T));
             var ptr = Marshal.AllocHGlobal(size);
@@ -85,7 +76,19 @@ namespace ReadStructFromFs
             }
         }
 
-        public static unsafe void DeserializeUnsafeUnaligned<T>(byte[] buffer, out T result)
+        public static T As2<T>(byte[] buffer) where T : struct
+        {
+            GCHandle handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            try
+            {
+                return (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            }
+            finally { 
+                handle.Free();
+            }
+        }
+
+        public static unsafe void AsViaUnsafeUnaligned<T>(byte[] buffer, out T result)
         {
             fixed (byte* bufferPtr = buffer)
             {
@@ -93,7 +96,7 @@ namespace ReadStructFromFs
             }
         }
 
-        public static unsafe T DeserializeUnsafeUnaligned<T>(byte[] buffer)
+        public static unsafe T AsViaUnsafeUnaligned<T>(byte[] buffer)
         {
             fixed (byte* bufferPtr = buffer)
             {
@@ -101,7 +104,7 @@ namespace ReadStructFromFs
             }
         }
 
-        public static byte[] Serialize<T>(T value) where T : struct
+        public static byte[] AsBytes<T>(T value) where T : struct
         {
             var size = Marshal.SizeOf(typeof(T));
             var array = new byte[size];
